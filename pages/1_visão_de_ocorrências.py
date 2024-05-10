@@ -9,6 +9,17 @@ import streamlit as st
 import plotly.express as px
 import folium
 
+#pd.set_option('display.max_rows', None)
+#pd.set_option('display.max_columns', None)
+#import warnings
+#warnings.simplefilter('ignore')
+
+@st.cache_data
+def le_arquivo_analise():
+    df_ocorrencias = pd.read_csv( 'dataset_analise/df_acidentes_analise_ocorr.csv' )
+    df_ocorrencias['ocorrencia_dia'] = pd.to_datetime(df_ocorrencias['ocorrencia_dia'])
+    return df_ocorrencias
+
 #8888888888888888888888888888888888888888888888888888888888888888888888888
 df1 = pd.read_csv( 'dataset/train.csv' )
 
@@ -68,15 +79,19 @@ df1['Time_taken(min)']  = df1['Time_taken(min)'].astype( int )
 #8888888888888888888888888888888888888888888888888888888888888888888888888
 
 
+df_ocorrencias = le_arquivo_analise()
 
+df_aux = df_ocorrencias
+df_aux = df_aux.dropna(subset=["ocorrencia_latitude"], axis=0)
+df_aux = df_aux.dropna(subset=["ocorrencia_longitude"], axis=0)
 
-df_ocorrencia = pd.read_csv( 'dataset_analise/df_acidentes_analise_ocorr.csv' )
-
-df_ocorrencia['ocorrencia_dia'] = pd.to_datetime(df_ocorrencia['ocorrencia_dia'])
+print(df_ocorrencias.groupby('ocorrencia_latitude')['ocorrencia_longitude'].count())
+exit()
 
 #----------------------------------------------
 # Barra lateral sidebar
 #----------------------------------------------
+#-------- define a cor
 st.markdown("""
 <style>
     [data-testid=stSidebar] {
@@ -85,20 +100,17 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-#--------
-st.header('Visão de Ocorrências')
-
-#--------
+#-------- Carrega imagem
 image_path = './images/aviao2.jpg'
 ix = Image.open( image_path ) 
 st.sidebar.image( ix, width=240 )
 
-#--------
+#-------- Empresa
 st.sidebar.markdown( '# i4x.Data' )
 st.sidebar.markdown( '## Análise e Predição de Dados')
 st.sidebar.markdown( """___""")
 
-#--------
+#-------- Controle de Data
 st.sidebar.markdown('## Selecione uma data limite')
 
 date_slider = st.sidebar.slider(
@@ -108,12 +120,9 @@ date_slider = st.sidebar.slider(
    max_value=datetime(2022, 4, 6),
    format='DD-MM-YYYY')
 
-#st.dataframe( df1 )
-
-st.header( date_slider )
 st.sidebar.markdown("""___""")
 
-#--------
+#-------- Parâmetros de filtragem
 traffic_options = st.sidebar.multiselect(
     'Quais as condições do trânsito',
     ['Low', 'Medium', 'High', 'Jam'],
@@ -123,19 +132,54 @@ traffic_options = st.sidebar.multiselect(
 st.sidebar.markdown("""___""")
 st.sidebar.markdown( '### Powered by i4x.Data')
 
-# filtro de data
+#-------- filtro de data
 linhas_selecionadas = df1['Order_Date'] < date_slider
 df1 = df1.loc[linhas_selecionadas, :]
 #st.dataframe( df1 )
 
-# filtro de transito
+#-------- filtro de transito
 linhas_selecionadas = df1['Road_traffic_density'].isin( traffic_options)
 df1 = df1.loc[linhas_selecionadas, :]
 #st.dataframe( df1 )
 
+
 #----------------------------------------------
-# Layout no Streamlit
+# Layout de dados
 #----------------------------------------------
+#-------- Dados Gerais
+st.header('Visão de Ocorrências')
+
+with st.container():
+    st.title( 'Métricas Gerais' )
+
+    col1, col2 = st.columns( 2, gap='Large')
+
+    with col1:
+        #  data inicial
+        col1.metric( 'Data Inicial', df_ocorrencias.loc[:, 'ocorrencia_dia'].min().strftime("%d/%m/%Y") )            
+
+    with col2:
+        # data final
+        col2.metric( 'Data Final', df_ocorrencias.loc[:, 'ocorrencia_dia'].max().strftime("%d/%m/%Y") ) 
+
+with st.container():
+
+    col1, col2, col3 = st.columns( 3, gap='Large')
+    with col1:
+        # total de ocorrências
+        col1.metric( 'Total de Ocorrências', df_ocorrencias.loc[:, 'ocorrencia_classificacao'].count() )            
+
+    with col2:
+        # total de aeródromos envolvidos
+        col2.metric( 'Qtde Aeródromos', len(pd.unique(df_ocorrencias['ocorrencia_aerodromo'])) )   
+
+    with col3:
+        # total de saída de pista
+        col3.metric( 'Qtde Saídas da Pista', df_ocorrencias.loc[:, 'qtde_saip_total'].max() ) 
+
+
+#-------- Abas de finalidade dos dados
+        
 tab1, tab2, tab3 = st.tabs( ['Visão Estratégica', 'Visão Tática', 'Visão Geográfica'])
 
 with tab1:
@@ -193,17 +237,26 @@ with tab2:
         st.plotly_chart( fig, use_container_width=True )
 
 with tab3:
-    st.markdown( '# Country Maps')
-    df_aux = df1.loc[:, ['City', 'Road_traffic_density', 'Delivery_location_latitude', 'Delivery_location_longitude']].\
-                groupby(['City', 'Road_traffic_density']).median().reset_index()
-    df_aux = df_aux.loc[df_aux['City'] != 'NaN', :]
-    df_aux = df_aux.loc[df_aux['Road_traffic_density'] != 'NaN', :]   
+    st.markdown( '# Mapa de Ocorrências')
+    df_aux = df_ocorrencias.loc[:, ['ocorrencia_cidade', 'ocorrencia_aerodromo', \
+                                    'ocorrencia_latitude', 'ocorrencia_longitude']]. \
+                                    groupby(['ocorrencia_cidade', 'ocorrencia_aerodromo']).median().reset_index()
+    df_aux = df_aux.dropna(subset=["ocorrencia_latitude"], axis=0)
+    df_aux = df_aux.dropna(subset=["ocorrencia_longitude"], axis=0)
 
+    df_ocorrencias['ocorrencia_latitude'] = \
+        df_ocorrencias['ocorrencia_latitude'].replace({'.' : ''}, regex=True)
+    df_ocorrencias['ocorrencia_longitude'] = \
+        df_ocorrencias['ocorrencia_longitude'].replace({'.' : ''}, regex=True)    
+
+    df_ocorrencias['ocorrencia_latitude'] = (pd.to_numeric(df_ocorrencias['ocorrencia_latitude'])) / 100
+    df_ocorrencias['ocorrencia_longitude'] = (pd.to_numeric(df_ocorrencias['ocorrencia_longitude'])) / 100    
+ 
     map = folium.Map()
 
     for index, location_info in df_aux.iterrows():
-        folium.Marker( [location_info['Delivery_location_latitude'],
-                        location_info['Delivery_location_longitude']],
-                        popup=location_info[['City', 'Road_traffic_density']] ).add_to( map )
+        folium.Marker( [location_info['ocorrencia_latitude'],
+                        location_info['ocorrencia_longitude']],
+                        popup=location_info[['ocorrencia_cidade', 'ocorrencia_aerodromo']] ).add_to( map )
         
     folium_static( map, width=1024, height=600 )
