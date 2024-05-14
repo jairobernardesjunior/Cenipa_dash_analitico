@@ -20,6 +20,23 @@ def le_arquivo_analise():
     df_ocorrencias['ocorrencia_dia'] = pd.to_datetime(df_ocorrencias['ocorrencia_dia'])
     return df_ocorrencias
 
+@st.cache_data
+def seleciona_tipo_ocorrencia(dfx):
+    return dfx[['ocorrencia_tipo', 'qtde_tipo_ocorr', 'perc_tipo_ocorr']].\
+        drop_duplicates().sort_values('perc_tipo_ocorr', ascending=False)
+
+@st.cache_data
+def agrupa_uf_classificacao(dfx):
+    # colunas
+    cols = ['ocorrencia_uf', 'ocorrencia_classificacao', 'qtde_classif']
+
+    # selecao de linhas
+    dfx = df_ocorrencias[['ocorrencia_uf', 'ocorrencia_classificacao']]
+    dfx['qtde_classif'] = 0
+
+    dfx = dfx.loc[:, cols].groupby( ['ocorrencia_uf', 'ocorrencia_classificacao']).count().reset_index()
+    return dfx.sort_values(['ocorrencia_uf'], ascending=False)    
+
 #8888888888888888888888888888888888888888888888888888888888888888888888888
 df1 = pd.read_csv( 'dataset/train.csv' )
 
@@ -42,9 +59,6 @@ df1 = df1.loc[linhas_selecionadas, :].copy()
 df1.loc[df1.multiple_deliveries.isnull(), 'multiple_deliveries'] = ' '
 linhas_selecionadas = (df1['multiple_deliveries'] != ' ') 
 df1 = df1.loc[linhas_selecionadas, :].copy()
-
-print(df1.isnull().sum())
-#exit()
 
 df1['Delivery_person_Age'] = df1['Delivery_person_Age'].astype( int )
 
@@ -79,14 +93,9 @@ df1['Time_taken(min)']  = df1['Time_taken(min)'].astype( int )
 #8888888888888888888888888888888888888888888888888888888888888888888888888
 
 
+
+
 df_ocorrencias = le_arquivo_analise()
-
-df_aux = df_ocorrencias
-df_aux = df_aux.dropna(subset=["ocorrencia_latitude"], axis=0)
-df_aux = df_aux.dropna(subset=["ocorrencia_longitude"], axis=0)
-
-print(df_ocorrencias.groupby('ocorrencia_latitude')['ocorrencia_longitude'].count())
-exit()
 
 #----------------------------------------------
 # Barra lateral sidebar
@@ -106,42 +115,8 @@ ix = Image.open( image_path )
 st.sidebar.image( ix, width=240 )
 
 #-------- Empresa
-st.sidebar.markdown( '# i4x.Data' )
-st.sidebar.markdown( '## Análise e Predição de Dados')
-st.sidebar.markdown( """___""")
-
-#-------- Controle de Data
-st.sidebar.markdown('## Selecione uma data limite')
-
-date_slider = st.sidebar.slider(
-   'Ate qual valor?',
-   value=datetime( 2022, 4, 13),
-   min_value=datetime(2022, 2, 11),
-   max_value=datetime(2022, 4, 6),
-   format='DD-MM-YYYY')
-
-st.sidebar.markdown("""___""")
-
-#-------- Parâmetros de filtragem
-traffic_options = st.sidebar.multiselect(
-    'Quais as condições do trânsito',
-    ['Low', 'Medium', 'High', 'Jam'],
-    default=['Low', 'Medium', 'High', 'Jam']
-    )
-
-st.sidebar.markdown("""___""")
+st.sidebar.markdown( '# i4x.Data - Análise e Predição de Dados')
 st.sidebar.markdown( '### Powered by i4x.Data')
-
-#-------- filtro de data
-linhas_selecionadas = df1['Order_Date'] < date_slider
-df1 = df1.loc[linhas_selecionadas, :]
-#st.dataframe( df1 )
-
-#-------- filtro de transito
-linhas_selecionadas = df1['Road_traffic_density'].isin( traffic_options)
-df1 = df1.loc[linhas_selecionadas, :]
-#st.dataframe( df1 )
-
 
 #----------------------------------------------
 # Layout de dados
@@ -177,45 +152,58 @@ with st.container():
         # total de saída de pista
         col3.metric( 'Qtde Saídas da Pista', df_ocorrencias.loc[:, 'qtde_saip_total'].max() ) 
 
-
+#----------------------------------------------
+# gráficos
+#----------------------------------------------
 #-------- Abas de finalidade dos dados
-        
 tab1, tab2, tab3 = st.tabs( ['Visão Estratégica', 'Visão Tática', 'Visão Geográfica'])
 
+#-------- Visão Estratégica
 with tab1:
     with st.container():
-        # Order Metric
-        st.markdown( '# Orders by Day')
+        # Classificação de ocorrências por UF
+        st.header( 'Classificação de Ocorrências por UF' )
 
-        # colunas
-        cols = ['ID', 'Order_Date']
+        dfx = agrupa_uf_classificacao(df_ocorrencias)
 
-        # selecao de linhas
-        df_aux = df1.loc[:, cols].groupby( 'Order_Date' ).count().reset_index()
-
-        # desenhar o gráfico de linhas
-        # Plotly
-        fig = px.bar ( df_aux, x='Order_Date', y='ID')    
+        # desenhar o gráfico de colunas
+        # Plotly  
+        fig = px.bar(dfx, x="qtde_classif", y="ocorrencia_uf", color="ocorrencia_classificacao",
+                     orientation='h',
+                     labels={
+                            "qtde_classif": "Ocorrências",
+                            "ocorrencia_uf": "UF",
+                            "ocorrencia_classificacao": "Classificação"
+                            },                     
+                     )
+        fig.update_traces(width=0.8)
+        fig.update_yaxes(tickfont=dict(size=8))
+        fig.update_xaxes(tickfont=dict(size=8))
         st.plotly_chart( fig, use_container_width=True)
 
     with st.container():
-        col1, col2 = st.columns( 2 )
-        with col1:
-            st.header( 'Traffic Order Share')
-            df_aux = df1.loc[:, ['ID', 'Road_traffic_density']].groupby('Road_traffic_density').count().reset_index()
-            df_aux = df_aux.loc[df_aux['Road_traffic_density'] != "NaN", :]
-            df_aux['entregas_perc'] = df_aux['ID'] / df_aux['ID'].sum()
-            fig = px.pie( df_aux, values='entregas_perc', names='Road_traffic_density')
-            st.plotly_chart( fig, use_container_width=True )
-        
-        with col2:
-            st.header( 'Traffic Order City')
-            df_aux = df1.loc[:, ['ID', 'City', 'Road_traffic_density']].groupby(['City', 'Road_traffic_density']).count().reset_index()
-            df_aux = df_aux.loc[df_aux['City'] != 'NaN', :]
-            df_aux = df_aux.loc[df_aux['Road_traffic_density'] != 'NaN', :]
-            fig = px.scatter( df_aux, x='City', y='Road_traffic_density', size = 'ID', color='City')
-            st.plotly_chart( fig, use_container_width=True )
+        # Percentual de Tipos de ocorrência
+        st.header( 'Percentual de Tipos de Ocorrência' )   
 
+        #-------- Controle de dados dupla face
+        intervalo = st.slider('Selecione o intervalo de percentual',
+                            0.0, 100.0, (1.75, 100.0))
+        st.write('Intervalo Selecionado:',intervalo) 
+
+        dfx = seleciona_tipo_ocorrencia(df_ocorrencias)
+        df_aux = dfx[(dfx['perc_tipo_ocorr'] >= intervalo[0]) & (dfx['perc_tipo_ocorr'] < intervalo[1])]
+        perc_eliminados = \
+            dfx[(dfx['perc_tipo_ocorr'] < intervalo[0]) | (dfx['perc_tipo_ocorr'] > intervalo[1])]['perc_tipo_ocorr'].sum()
+
+        df_inclui = {'ocorrencia_tipo':'***** fora do intervalo', 'qtde_tipo_ocorr': 0, 'perc_tipo_ocorr': perc_eliminados}
+        df_inclui = pd.DataFrame(df_inclui, index=([1]))
+        df_aux = pd.concat([df_aux, df_inclui])
+
+        fig = px.pie( df_aux, values='perc_tipo_ocorr', names='ocorrencia_tipo')
+        fig.update_layout(autosize=False)
+        st.plotly_chart( fig, use_container_width=True )                                    
+
+#-------- Visão Tática
 with tab2:
     with st.container():
         st.markdown( '# Order by Week')
@@ -236,27 +224,19 @@ with tab2:
         fig=px.line( df_aux, x='week_of_year', y='order_by_deliver')
         st.plotly_chart( fig, use_container_width=True )
 
+#-------- Visão Geográfica
 with tab3:
-    st.markdown( '# Mapa de Ocorrências')
-    df_aux = df_ocorrencias.loc[:, ['ocorrencia_cidade', 'ocorrencia_aerodromo', \
-                                    'ocorrencia_latitude', 'ocorrencia_longitude']]. \
-                                    groupby(['ocorrencia_cidade', 'ocorrencia_aerodromo']).median().reset_index()
-    df_aux = df_aux.dropna(subset=["ocorrencia_latitude"], axis=0)
-    df_aux = df_aux.dropna(subset=["ocorrencia_longitude"], axis=0)
+    st.markdown( '# Country Maps')
+    df_aux = df1.loc[:, ['City', 'Road_traffic_density', 'Delivery_location_latitude', 'Delivery_location_longitude']].\
+                groupby(['City', 'Road_traffic_density']).median().reset_index()
+    df_aux = df_aux.loc[df_aux['City'] != 'NaN', :]
+    df_aux = df_aux.loc[df_aux['Road_traffic_density'] != 'NaN', :]   
 
-    df_ocorrencias['ocorrencia_latitude'] = \
-        df_ocorrencias['ocorrencia_latitude'].replace({'.' : ''}, regex=True)
-    df_ocorrencias['ocorrencia_longitude'] = \
-        df_ocorrencias['ocorrencia_longitude'].replace({'.' : ''}, regex=True)    
-
-    df_ocorrencias['ocorrencia_latitude'] = (pd.to_numeric(df_ocorrencias['ocorrencia_latitude'])) / 100
-    df_ocorrencias['ocorrencia_longitude'] = (pd.to_numeric(df_ocorrencias['ocorrencia_longitude'])) / 100    
- 
     map = folium.Map()
 
     for index, location_info in df_aux.iterrows():
-        folium.Marker( [location_info['ocorrencia_latitude'],
-                        location_info['ocorrencia_longitude']],
-                        popup=location_info[['ocorrencia_cidade', 'ocorrencia_aerodromo']] ).add_to( map )
+        folium.Marker( [location_info['Delivery_location_latitude'],
+                        location_info['Delivery_location_longitude']],
+                        popup=location_info[['City', 'Road_traffic_density']] ).add_to( map )
         
     folium_static( map, width=1024, height=600 )
