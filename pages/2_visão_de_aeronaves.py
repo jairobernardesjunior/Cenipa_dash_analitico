@@ -9,6 +9,47 @@ import streamlit as st
 import plotly.express as px
 import folium
 
+#pd.set_option('display.max_rows', None)
+#pd.set_option('display.max_columns', None)
+#import warnings
+#warnings.simplefilter('ignore')
+
+@st.cache_data
+def le_arquivo_analise():
+    df_ocorrencias = pd.read_csv( 'dataset_analise/df_acidentes_analise_ocorr.csv' )
+    df_ocorrencias['ocorrencia_dia'] = pd.to_datetime(df_ocorrencias['ocorrencia_dia'])
+    return df_ocorrencias
+
+@st.cache_data
+def seleciona_tipo_ocorrencia(dfx):
+    return dfx[['ocorrencia_tipo', 'qtde_tipo_ocorr', 'perc_tipo_ocorr']].\
+        drop_duplicates().sort_values('perc_tipo_ocorr', ascending=False)
+
+@st.cache_data
+def agrupa_uf_classificacao(dfx):
+    # colunas
+    cols = ['ocorrencia_uf', 'ocorrencia_classificacao', 'qtde_classif']
+
+    # selecao de linhas
+    dfx = df_ocorrencias[['ocorrencia_uf', 'ocorrencia_classificacao']]
+    dfx['qtde_classif'] = 0
+
+    dfx = dfx.loc[:, cols].groupby( ['ocorrencia_uf', 'ocorrencia_classificacao']).count().reset_index()
+    return dfx.sort_values(['ocorrencia_uf'], ascending=False)    
+
+@st.cache_data
+def seleciona_saida_pista_aerodromo(dfx):
+    dfx = dfx[['ocorrencia_cidade', 'ocorrencia_aerodromo', 'qtde_saip_aerod', 'qtde_saip_total']].\
+        sort_values('qtde_saip_aerod', ascending=False)
+    dfx = dfx.drop_duplicates().dropna()
+    dfx = dfx[(dfx['qtde_saip_aerod'] > 0) & 
+              (dfx['ocorrencia_aerodromo'] != '***') &
+              (dfx['ocorrencia_aerodromo'] != '****') &
+              (dfx['ocorrencia_aerodromo'] != '**NI')]
+    dfx['cidade_aerodromo'] = dfx['ocorrencia_cidade'] + ' - ' + dfx['ocorrencia_aerodromo']
+
+    return dfx
+
 #8888888888888888888888888888888888888888888888888888888888888888888888888
 df1 = pd.read_csv( 'dataset/train.csv' )
 
@@ -31,9 +72,6 @@ df1 = df1.loc[linhas_selecionadas, :].copy()
 df1.loc[df1.multiple_deliveries.isnull(), 'multiple_deliveries'] = ' '
 linhas_selecionadas = (df1['multiple_deliveries'] != ' ') 
 df1 = df1.loc[linhas_selecionadas, :].copy()
-
-print(df1.isnull().sum())
-#exit()
 
 df1['Delivery_person_Age'] = df1['Delivery_person_Age'].astype( int )
 
@@ -70,13 +108,12 @@ df1['Time_taken(min)']  = df1['Time_taken(min)'].astype( int )
 
 
 
-df_ocorrencia = pd.read_csv( 'dataset_analise/df_acidentes_analise_ocorr.csv' )
-
-df_ocorrencia['ocorrencia_dia'] = pd.to_datetime(df_ocorrencia['ocorrencia_dia'])
+df_ocorrencias = le_arquivo_analise()
 
 #----------------------------------------------
 # Barra lateral sidebar
 #----------------------------------------------
+#-------- define a cor
 st.markdown("""
 <style>
     [data-testid=stSidebar] {
@@ -85,157 +122,140 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-#--------
-st.header('Visão de Aeronaves')
-
-#--------
-image_path = './images/aviao3.jpg'
+#-------- Carrega imagem
+image_path = './images/aviao2.jpg'
 ix = Image.open( image_path ) 
 st.sidebar.image( ix, width=240 )
 
-#--------
-st.sidebar.markdown( '# i4x.Data' )
-st.sidebar.markdown( '## Análise e Predição de Dados')
-st.sidebar.markdown( """___""")
-
-#--------
-st.sidebar.markdown('## Selecione uma data limite')
-
-date_slider = st.sidebar.slider(
-   'Ate qual valor?',
-   value=datetime( 2022, 4, 13),
-   min_value=datetime(2022, 2, 11),
-   max_value=datetime(2022, 4, 6),
-   format='DD-MM-YYYY')
-
-#st.dataframe( df1 )
-
-st.header( date_slider )
-st.sidebar.markdown("""___""")
-
-#--------
-traffic_options = st.sidebar.multiselect(
-    'Quais as condições do trânsito',
-    ['Low', 'Medium', 'High', 'Jam'],
-    default=['Low', 'Medium', 'High', 'Jam']
-    )
-
-st.sidebar.markdown("""___""")
+#-------- Empresa
+st.sidebar.markdown( '# i4x.Data - Análise e Predição de Dados')
 st.sidebar.markdown( '### Powered by i4x.Data')
 
-# filtro de data
-linhas_selecionadas = df1['Order_Date'] < date_slider
-df1 = df1.loc[linhas_selecionadas, :]
-#st.dataframe( df1 )
+#----------------------------------------------
+# Layout de dados
+#----------------------------------------------
+#-------- Dados Gerais
+st.header('Visão de Ocorrências')
 
-# filtro de transito
-linhas_selecionadas = df1['Road_traffic_density'].isin( traffic_options)
-df1 = df1.loc[linhas_selecionadas, :]
-#st.dataframe( df1 )
+with st.container():
+    st.title( 'Métricas Gerais' )
+
+    col1, col2 = st.columns( 2, gap='Large')
+
+    with col1:
+        #  data inicial
+        col1.metric( 'Data Inicial', df_ocorrencias.loc[:, 'ocorrencia_dia'].min().strftime("%d/%m/%Y") )            
+
+    with col2:
+        # data final
+        col2.metric( 'Data Final', df_ocorrencias.loc[:, 'ocorrencia_dia'].max().strftime("%d/%m/%Y") ) 
+
+with st.container():
+
+    col1, col2, col3 = st.columns( 3, gap='Large')
+    with col1:
+        # total de ocorrências
+        col1.metric( 'Total de Ocorrências', df_ocorrencias.loc[:, 'ocorrencia_classificacao'].count() )            
+
+    with col2:
+        # total de aeródromos envolvidos
+        col2.metric( 'Qtde Aeródromos', len(pd.unique(df_ocorrencias['ocorrencia_aerodromo'])) )   
+
+    with col3:
+        # total de saída de pista
+        col3.metric( 'Qtde Saídas da Pista', df_ocorrencias.loc[:, 'qtde_saip_total'].max() ) 
 
 #----------------------------------------------
-# Layout no Streamlit
+# gráficos
 #----------------------------------------------
-tab1, tab2, tab3 = st.tabs( ['Visão Gerencial', '_', '_'])
+#-------- Abas de finalidade dos dados
+tab1, tab2, tab3 = st.tabs( ['Visão Estratégica', 'Visão Tática', 'Visão Geográfica'])
 
+#-------- Visão Estratégica
 with tab1:
     with st.container():
-        st.title( 'Overall Metrics' )
+        # Classificação de ocorrências por UF
+        st.header( 'Classificação de Ocorrências por UF' )
 
-        col1, col2, col3, col4 = st.columns( 4, gap='large')
-        with col1:
-            # A maior idade dos entregadores
-            maior_idade = df1.loc[:, 'Delivery_person_Age'].max()
-            col1.metric( 'Maior de idade', maior_idade )            
+        dfx = agrupa_uf_classificacao(df_ocorrencias)
 
-        with col2:
-            # A menor idade dos entregadores
-            menor_idade = df1.loc[:, 'Delivery_person_Age'].min()
-            col2.metric( 'Menor idade', menor_idade )            
-
-        with col3:
-            # Melhor condicao de veiculos
-            melhor_condicao = df1.loc[:, 'Vehicle_condition'].max()
-            col3.metric( 'Melhor condicao', melhor_condicao )            
-
-        with col4:
-            # Pior condicao de veiculos
-            pior_condicao = df1.loc[:, 'Vehicle_condition'].min()
-            col4.metric( 'Pior condicao', pior_condicao )            
+        # desenhar o gráfico de colunas
+        # Plotly  
+        fig = px.bar(dfx, x="qtde_classif", y="ocorrencia_uf", color="ocorrencia_classificacao",
+                     orientation='h',
+                     labels={
+                            "qtde_classif": "Ocorrências",
+                            "ocorrencia_uf": "UF",
+                            "ocorrencia_classificacao": "Classificação"
+                            },                     
+                     )
+        fig.update_traces(width=0.8)
+        fig.update_yaxes(tickfont=dict(size=8))
+        fig.update_xaxes(tickfont=dict(size=8))
+        st.plotly_chart( fig, use_container_width=True)
 
     with st.container():
-        st.markdown( """___""")
-        st.title('Avaliacoes')
+        # Percentual de Tipos de ocorrência
+        st.header( 'Percentual de Tipos de Ocorrência' )   
 
-        col1, col2 = st.columns(2)
-        with col1:
-            st.markdown('##### Avaliacao media por Entregador')
-            df_avg_ratings_per_deliver = ( df1.loc[:, ['Delivery_person_Ratings', 'Delivery_person_ID']]
-                                              .groupby( 'Delivery_person_ID' )
-                                              .mean()
-                                              .reset_index() )
-            st.dataframe( df_avg_ratings_per_deliver )            
+        #-------- Controle de dados dupla face
+        intervalo = st.slider('Selecione o intervalo de percentual',
+                            0.0, 100.0, (1.75, 100.0))
+        st.write('Intervalo Selecionado:',intervalo) 
 
-        with col2:
-            st.markdown('##### Avaliacao media por transito')
-            df_avg_std_rating_by_traffic = ( df1.loc[:, ['Delivery_person_Ratings', 'Road_traffic_density']]
-                                                .groupby( 'Road_traffic_density')
-                                                .agg( {'Delivery_person_Ratings': ['mean', 'std' ]} ) )
+        dfx = seleciona_tipo_ocorrencia(df_ocorrencias)
+        df_aux = dfx[(dfx['perc_tipo_ocorr'] >= intervalo[0]) & (dfx['perc_tipo_ocorr'] < intervalo[1])]
+        perc_eliminados = \
+            dfx[(dfx['perc_tipo_ocorr'] < intervalo[0]) | (dfx['perc_tipo_ocorr'] > intervalo[1])]['perc_tipo_ocorr'].sum()
 
-            # mudanca de nome das colunas
-            df_avg_std_rating_by_traffic.columns = ['delivery_mean', 'delivery_std']
+        df_inclui = {'ocorrencia_tipo':'***** fora do intervalo', 'qtde_tipo_ocorr': 0, 'perc_tipo_ocorr': perc_eliminados}
+        df_inclui = pd.DataFrame(df_inclui, index=([1]))
+        df_aux = pd.concat([df_aux, df_inclui])
 
-            # reset do index
-            df_avg_std_rating_by_traffic = df_avg_std_rating_by_traffic.reset_index()
-            st.dataframe( df_avg_std_rating_by_traffic )
+        fig = px.pie( df_aux, values='perc_tipo_ocorr', names='ocorrencia_tipo')
+        fig.update_layout(autosize=False)
+        st.plotly_chart( fig, use_container_width=True )                                    
 
-            st.markdown('##### Avaliacao media por clima')
-            df_avg_std_rating_by_weather = ( df1.loc[:, ['Delivery_person_Ratings', 'Weatherconditions']]
-                                                .groupby( 'Weatherconditions')
-                                                .agg( {'Delivery_person_Ratings': ['mean', 'std']} ) )
-
-            # mudanca de nome das colunas
-            df_avg_std_rating_by_weather.columns = ['delivery_mean', 'delivery_std']
-
-            # reset do index
-            df_avg_std_rating_by_weather = df_avg_std_rating_by_weather.reset_index()
-            st.dataframe( df_avg_std_rating_by_weather )            
-
+#-------- Visão Tática
+with tab2:
     with st.container():
-        st.markdown( """___""")
-        st.title('Velocidade de Entrega')
+        # Quantidade de Saidas da Pista por Aeródromo
+        st.header( 'Quantidade de Saidas da Pista por Aeródromo' )   
 
-        col1, col2 = st.columns(2)
+        dfx = seleciona_saida_pista_aerodromo(df_ocorrencias)
 
-        with col1:
-            st.markdown('##### Top Entregadores mais rapidos')
-            df2 = ( df1.loc[:, ['Delivery_person_ID', 'City', 'Time_taken(min)']]
-                       .groupby( ['City', 'Delivery_person_ID'] )
-                       .mean()
-                       .sort_values( ['City', 'Time_taken(min)'], ascending=True ).reset_index() )
+        #-------- Controle de dados dupla face
+        intervalo = st.slider('Selecione o intervalo de quantidade',
+                            0.0, 100.0, (6.0, 100.0))
+        st.write('Intervalo Selecionado:',intervalo)    
 
-            df_aux01 = df2.loc[df2['City'] == 'Metropolitian', :].head(10)
-            df_aux02 = df2.loc[df2['City'] == 'Urban', :].head(10)
-            df_aux03 = df2.loc[df2['City'] == 'Semi-Urban', :].head(10)
+        df_aux = dfx[(dfx['qtde_saip_aerod'] >= intervalo[0]) & (dfx['qtde_saip_aerod'] < intervalo[1])]
 
-            df3 = pd.concat( [df_aux01, df_aux02, df_aux03] ).reset_index( drop=True )
-            st.dataframe( df3 )            
+        fig = px.bar ( df_aux, x='qtde_saip_aerod', y='cidade_aerodromo',                      
+                       labels={
+                            "qtde_saip_aerod": "Quantidade",
+                            "cidade_aerodromo": "Aeródromo",
+                              },                     
+                     )
+        fig.update_traces(width=0.8)
+        fig.update_yaxes(tickfont=dict(size=8))
+        fig.update_xaxes(tickfont=dict(size=8))
 
-        with col2:
-            st.markdown('##### Top Entregadores mais lentos')
-            df2 = ( df1.loc[:, ['Delivery_person_ID', 'City', 'Time_taken(min)']]
-                       .groupby( ['City', 'Delivery_person_ID'] )
-                       .mean()
-                       .sort_values( ['City', 'Time_taken(min)'], ascending=False ).reset_index() )
+        st.plotly_chart( fig, use_container_width=True)          
 
-            df_aux01 = df2.loc[df2['City'] == 'Metropolitian', :].head(10)
-            df_aux02 = df2.loc[df2['City'] == 'Urban', :].head(10)
-            df_aux03 = df2.loc[df2['City'] == 'Semi-Urban', :].head(10)
+#-------- Visão Geográfica
+with tab3:
+    st.markdown( '# Country Maps')
+    df_aux = df1.loc[:, ['City', 'Road_traffic_density', 'Delivery_location_latitude', 'Delivery_location_longitude']].\
+                groupby(['City', 'Road_traffic_density']).median().reset_index()
+    df_aux = df_aux.loc[df_aux['City'] != 'NaN', :]
+    df_aux = df_aux.loc[df_aux['Road_traffic_density'] != 'NaN', :]   
 
-            df3 = pd.concat( [df_aux01, df_aux02, df_aux03] ).reset_index( drop=True )
-            st.dataframe( df3 )            
+    map = folium.Map()
 
-
-
-
-
+    for index, location_info in df_aux.iterrows():
+        folium.Marker( [location_info['Delivery_location_latitude'],
+                        location_info['Delivery_location_longitude']],
+                        popup=location_info[['City', 'Road_traffic_density']] ).add_to( map )
+        
+    folium_static( map, width=1024, height=600 )
