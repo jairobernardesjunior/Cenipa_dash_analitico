@@ -50,64 +50,7 @@ def seleciona_saida_pista_aerodromo(dfx):
 
     return dfx
 
-#8888888888888888888888888888888888888888888888888888888888888888888888888
-df1 = pd.read_csv( 'dataset/train.csv' )
-
-# 1. convertando a coluna Age de texto para numero
-linhas_selecionadas = (df1['Delivery_person_Age'] != 'NaN ') 
-df1 = df1.loc[linhas_selecionadas, :].copy()
-
-linhas_selecionadas = (df1['Delivery_person_Ratings'] != 'NaN ') 
-df1 = df1.loc[linhas_selecionadas, :].copy()
-
-linhas_selecionadas = (df1['Road_traffic_density'] != 'NaN ') 
-df1 = df1.loc[linhas_selecionadas, :].copy()
-
-linhas_selecionadas = (df1['City'] != 'NaN ') 
-df1 = df1.loc[linhas_selecionadas, :].copy()
-
-linhas_selecionadas = (df1['Festival'] != 'NaN ') 
-df1 = df1.loc[linhas_selecionadas, :].copy()
-
-df1.loc[df1.multiple_deliveries.isnull(), 'multiple_deliveries'] = ' '
-linhas_selecionadas = (df1['multiple_deliveries'] != ' ') 
-df1 = df1.loc[linhas_selecionadas, :].copy()
-
-df1['Delivery_person_Age'] = df1['Delivery_person_Age'].astype( int )
-
-# 2. convertando a coluna Ratings de texto para numero decimal ( float )
-df1['Delivery_person_Ratings'] = df1['Delivery_person_Ratings'].astype( float )
-
-# 3. convertando a coluna order_date de texto para data
-df1['Order_Date'] = pd.to_datetime( df1['Order_Date'], format='%d-%m-%Y' )
-
-# 4. convertendo multiple_deliveries de texto para numero inteiro ( int )
-linhas_selecionadas = (df1['multiple_deliveries'] != 'NaN ')
-df1 = df1.loc[linhas_selecionadas, :].copy()
-df1['multiple_deliveries'] = df1['multiple_deliveries'].astype( int )
-
-## 5. Removendo os espacos dentro de strings/texto/object
-#df1 = df1.reset_index( drop=True )
-#for i in range( len( df1 ) ):
-#  df1.loc[i, 'ID'] = df1.loc[i, 'ID'].strip()
-
-# 6. Removendo os espacos dentro de strings/texto/object
-
-df1.loc[:, 'ID'] = df1.loc[:, 'ID'].str.strip()
-df1.loc[:, 'Road_traffic_density'] = df1.loc[:, 'Road_traffic_density'].str.strip()
-df1.loc[:, 'Type_of_order'] = df1.loc[:, 'Type_of_order'].str.strip()
-df1.loc[:, 'Type_of_vehicle'] = df1.loc[:, 'Type_of_vehicle'].str.strip()
-df1.loc[:, 'City'] = df1.loc[:, 'City'].str.strip()
-df1.loc[:, 'Festival'] = df1.loc[:, 'Festival'].str.strip()
-
-# 7. Limpando a coluna de time taken
-df1['Time_taken(min)'] = df1['Time_taken(min)'].apply( lambda x: x.split( '(min) ')[1] )
-df1['Time_taken(min)']  = df1['Time_taken(min)'].astype( int )
-#8888888888888888888888888888888888888888888888888888888888888888888888888
-
-
-
-
+#------------------- INÍCIO
 df_ocorrencias = le_arquivo_analise()
 
 #----------------------------------------------
@@ -169,7 +112,7 @@ with st.container():
 # gráficos
 #----------------------------------------------
 #-------- Abas de finalidade dos dados
-tab1, tab2, tab3 = st.tabs( ['Visão Estratégica', 'Visão Tática', 'Visão Geográfica'])
+tab1, tab2, tab3 = st.tabs( ['Visão Estratégica', 'Visão Tática', '-'])
 
 #-------- Visão Estratégica
 with tab1:
@@ -242,20 +185,3 @@ with tab2:
         fig.update_xaxes(tickfont=dict(size=8))
 
         st.plotly_chart( fig, use_container_width=True)          
-
-#-------- Visão Geográfica
-with tab3:
-    st.markdown( '# Country Maps')
-    df_aux = df1.loc[:, ['City', 'Road_traffic_density', 'Delivery_location_latitude', 'Delivery_location_longitude']].\
-                groupby(['City', 'Road_traffic_density']).median().reset_index()
-    df_aux = df_aux.loc[df_aux['City'] != 'NaN', :]
-    df_aux = df_aux.loc[df_aux['Road_traffic_density'] != 'NaN', :]   
-
-    map = folium.Map()
-
-    for index, location_info in df_aux.iterrows():
-        folium.Marker( [location_info['Delivery_location_latitude'],
-                        location_info['Delivery_location_longitude']],
-                        popup=location_info[['City', 'Road_traffic_density']] ).add_to( map )
-        
-    folium_static( map, width=1024, height=600 )
