@@ -37,6 +37,19 @@ def agrupa_uf_classificacao(dfx):
     dfx = dfx.loc[:, cols].groupby( ['ocorrencia_uf', 'ocorrencia_classificacao']).count().reset_index()
     return dfx.sort_values(['ocorrencia_uf'], ascending=False)    
 
+@st.cache_data
+def seleciona_saida_pista_aerodromo(dfx):
+    dfx = dfx[['ocorrencia_cidade', 'ocorrencia_aerodromo', 'qtde_saip_aerod', 'qtde_saip_total']].\
+        sort_values('qtde_saip_aerod', ascending=False)
+    dfx = dfx.drop_duplicates().dropna()
+    dfx = dfx[(dfx['qtde_saip_aerod'] > 0) & 
+              (dfx['ocorrencia_aerodromo'] != '***') &
+              (dfx['ocorrencia_aerodromo'] != '****') &
+              (dfx['ocorrencia_aerodromo'] != '**NI')]
+    dfx['cidade_aerodromo'] = dfx['ocorrencia_cidade'] + ' - ' + dfx['ocorrencia_aerodromo']
+
+    return dfx
+
 #8888888888888888888888888888888888888888888888888888888888888888888888888
 df1 = pd.read_csv( 'dataset/train.csv' )
 
@@ -206,23 +219,29 @@ with tab1:
 #-------- Visão Tática
 with tab2:
     with st.container():
-        st.markdown( '# Order by Week')
-        # criar a coluna de semana
-        df1['week_of_year'] = df1['Order_Date'].dt.strftime( '%U')
-        df_aux = df1.loc[:, ['ID', 'week_of_year']].groupby( 'week_of_year').count().reset_index()
-        fig = px.line( df_aux, x='week_of_year', y='ID' )
-        st.plotly_chart( fig, use_container_width=True )
+        # Quantidade de Saidas da Pista por Aeródromo
+        st.header( 'Quantidade de Saidas da Pista por Aeródromo' )   
 
-    with st.container():
-        st.markdown( '# Order Share by Week')
-        df_aux01 = df1.loc[:, ['ID', 'week_of_year']].groupby('week_of_year').count().reset_index()
-        df_aux02 = df1.loc[:, ['Delivery_person_ID', 'week_of_year']].groupby( 'week_of_year' ).nunique().reset_index()
+        dfx = seleciona_saida_pista_aerodromo(df_ocorrencias)
 
-        df_aux = pd.merge( df_aux01, df_aux02, how='inner', on='week_of_year' )
-        df_aux['order_by_deliver'] = df_aux['ID'] / df_aux['Delivery_person_ID']
+        #-------- Controle de dados dupla face
+        intervalo = st.slider('Selecione o intervalo de quantidade',
+                            0.0, 100.0, (6.0, 100.0))
+        st.write('Intervalo Selecionado:',intervalo)    
 
-        fig=px.line( df_aux, x='week_of_year', y='order_by_deliver')
-        st.plotly_chart( fig, use_container_width=True )
+        df_aux = dfx[(dfx['qtde_saip_aerod'] >= intervalo[0]) & (dfx['qtde_saip_aerod'] < intervalo[1])]
+
+        fig = px.bar ( df_aux, x='qtde_saip_aerod', y='cidade_aerodromo',                      
+                       labels={
+                            "qtde_saip_aerod": "Quantidade",
+                            "cidade_aerodromo": "Aeródromo",
+                              },                     
+                     )
+        fig.update_traces(width=0.8)
+        fig.update_yaxes(tickfont=dict(size=8))
+        fig.update_xaxes(tickfont=dict(size=8))
+
+        st.plotly_chart( fig, use_container_width=True)          
 
 #-------- Visão Geográfica
 with tab3:

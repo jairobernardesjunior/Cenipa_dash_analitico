@@ -14,11 +14,8 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.sidebar.markdown( '# i4x.Data' )
-st.sidebar.markdown( '## Análise e Predição de Dados')
-st.sidebar.markdown( """___""")
-
-st.write( '# i4x.Data - Cenipa Dashboard')
+st.sidebar.markdown( '# i4x.Data - Análise e Predição de Dados')
+st.sidebar.markdown( '### Powered by i4x.Data')
 
 st.markdown(
     """
