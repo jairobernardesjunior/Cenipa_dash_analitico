@@ -71,17 +71,17 @@ ix = Image.open( image_path )
 st.sidebar.image( ix, width=240 )
 
 #-------- Empresa
-st.sidebar.markdown( '# i4x.Data - Análise e Predição de Dados')
+st.sidebar.markdown( '# Análise e Predição')
 st.sidebar.markdown( '### Powered by i4x.Data')
 
 #----------------------------------------------
 # Layout de dados
 #----------------------------------------------
 #-------- Dados Gerais
-st.header('Visão de Ocorrências')
+st.title( 'Visão de Fatores e Recomendações' )
 
 with st.container():
-    st.title( 'Métricas Gerais' )
+    st.header( 'Métricas Gerais' )
 
     col1, col2 = st.columns( 2, gap='Large')
 

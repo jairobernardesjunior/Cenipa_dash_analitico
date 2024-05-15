@@ -14,7 +14,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.sidebar.markdown( '# i4x.Data - Análise e Predição de Dados')
+st.sidebar.markdown( '# Análise e Predição')
 st.sidebar.markdown( '### Powered by i4x.Data')
 
 st.markdown(

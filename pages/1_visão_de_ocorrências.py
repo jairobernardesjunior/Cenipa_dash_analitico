@@ -128,17 +128,17 @@ ix = Image.open( image_path )
 st.sidebar.image( ix, width=240 )
 
 #-------- Empresa
-st.sidebar.markdown( '# i4x.Data - Análise e Predição de Dados')
+st.sidebar.markdown( '# Análise e Predição')
 st.sidebar.markdown( '### Powered by i4x.Data')
 
 #----------------------------------------------
 # Layout de dados
 #----------------------------------------------
 #-------- Dados Gerais
-st.header('Visão de Ocorrências')
+st.title( 'Visão de Ocorrências' )
 
 with st.container():
-    st.title( 'Métricas Gerais' )
+    st.header( 'Métricas Gerais' )
 
     col1, col2 = st.columns( 2, gap='Large')
 
@@ -159,11 +159,11 @@ with st.container():
 
     with col2:
         # total de aeródromos envolvidos
-        col2.metric( 'Qtde Aeródromos', len(pd.unique(df_ocorrencias['ocorrencia_aerodromo'])) )   
+        col2.metric( 'Qtde de Aeródromos', len(pd.unique(df_ocorrencias['ocorrencia_aerodromo'])) )   
 
     with col3:
         # total de saída de pista
-        col3.metric( 'Qtde Saídas da Pista', df_ocorrencias.loc[:, 'qtde_saip_total'].max() ) 
+        col3.metric( 'Qtde de Saídas da Pista', df_ocorrencias.loc[:, 'qtde_saip_total'].max() ) 
 
 #----------------------------------------------
 # gráficos
@@ -174,7 +174,7 @@ tab1, tab2, tab3 = st.tabs( ['Visão Estratégica', 'Visão Tática', 'Visão Ge
 #-------- Visão Estratégica
 with tab1:
     with st.container():
-        # Classificação de ocorrências por UF
+        # Classificação de ocorrências por UF - GBARRAS GRUPOS
         st.header( 'Classificação de Ocorrências por UF' )
 
         dfx = agrupa_uf_classificacao(df_ocorrencias)
@@ -182,6 +182,7 @@ with tab1:
         # desenhar o gráfico de colunas
         # Plotly  
         fig = px.bar(dfx, x="qtde_classif", y="ocorrencia_uf", color="ocorrencia_classificacao",
+                     title= 'Classificação/UF',
                      orientation='h',
                      labels={
                             "qtde_classif": "Ocorrências",
@@ -195,7 +196,7 @@ with tab1:
         st.plotly_chart( fig, use_container_width=True)
 
     with st.container():
-        # Percentual de Tipos de ocorrência
+        # Percentual de Tipos de ocorrência - GPIZZA
         st.header( 'Percentual de Tipos de Ocorrência' )   
 
         #-------- Controle de dados dupla face
@@ -212,14 +213,14 @@ with tab1:
         df_inclui = pd.DataFrame(df_inclui, index=([1]))
         df_aux = pd.concat([df_aux, df_inclui])
 
-        fig = px.pie( df_aux, values='perc_tipo_ocorr', names='ocorrencia_tipo')
+        fig = px.pie( df_aux, values='perc_tipo_ocorr', names='ocorrencia_tipo', title='Tipos de Ocorrências')
         fig.update_layout(autosize=False)
         st.plotly_chart( fig, use_container_width=True )                                    
 
 #-------- Visão Tática
 with tab2:
     with st.container():
-        # Quantidade de Saidas da Pista por Aeródromo
+        # Quantidade de Saidas da Pista por Aeródromo - GBARRAS
         st.header( 'Quantidade de Saidas da Pista por Aeródromo' )   
 
         dfx = seleciona_saida_pista_aerodromo(df_ocorrencias)
@@ -231,7 +232,8 @@ with tab2:
 
         df_aux = dfx[(dfx['qtde_saip_aerod'] >= intervalo[0]) & (dfx['qtde_saip_aerod'] < intervalo[1])]
 
-        fig = px.bar ( df_aux, x='qtde_saip_aerod', y='cidade_aerodromo',                      
+        fig = px.bar ( df_aux, x='qtde_saip_aerod', y='cidade_aerodromo',    
+                       title= 'Saidas da Pista',                  
                        labels={
                             "qtde_saip_aerod": "Quantidade",
                             "cidade_aerodromo": "Aeródromo",
@@ -246,6 +248,7 @@ with tab2:
 #-------- Visão Geográfica
 with tab3:
     st.markdown( '# Country Maps')
+    # Localização das ocorrências aeronáuticas - GMAP
     df_aux = df1.loc[:, ['City', 'Road_traffic_density', 'Delivery_location_latitude', 'Delivery_location_longitude']].\
                 groupby(['City', 'Road_traffic_density']).median().reset_index()
     df_aux = df_aux.loc[df_aux['City'] != 'NaN', :]
