@@ -193,6 +193,9 @@ with tab1:
         fig.update_traces(width=0.8)
         fig.update_yaxes(tickfont=dict(size=8))
         fig.update_xaxes(tickfont=dict(size=8))
+
+        fig.update_layout(width=700, height=550, bargap=0.05)        
+
         st.plotly_chart( fig, use_container_width=True)
 
     with st.container():
@@ -242,6 +245,9 @@ with tab2:
         fig.update_traces(width=0.8)
         fig.update_yaxes(tickfont=dict(size=8))
         fig.update_xaxes(tickfont=dict(size=8))
+
+        fig.update_traces(marker_color='blue')
+        fig.update_layout(width=700, height=600, bargap=0.05)
 
         st.plotly_chart( fig, use_container_width=True)          
 

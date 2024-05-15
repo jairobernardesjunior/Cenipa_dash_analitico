@@ -25,7 +25,10 @@ def seleciona_fabricante(dfx):
     return dfx[['aeronave_fabricante', 'qtde_fabric', 'perc_fabric']].\
         drop_duplicates().sort_values('qtde_fabric', ascending=False)
 
-
+@st.cache_data
+def seleciona_ano_fab(dfx):
+    return dfx[['aeronave_ano_fabricacao', 'qtde_ano_fab', 'perc_ano_fab']].\
+        drop_duplicates().sort_values('aeronave_ano_fabricacao', ascending=True)
 
 
 
@@ -76,7 +79,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 #-------- Carrega imagem
-image_path = './images/aviao2.jpg'
+image_path = './images/aviao3.jpg'
 ix = Image.open( image_path ) 
 st.sidebar.image( ix, width=240 )
 
@@ -149,31 +152,43 @@ with tab1:
         fig.update_yaxes(tickfont=dict(size=8))
         fig.update_xaxes(tickfont=dict(size=8))
 
+        fig.update_traces(marker_color='red')
+        fig.update_layout(width=700, height=500, bargap=0.05)        
+
         st.plotly_chart( fig, use_container_width=True)                                   
 
 #-------- Visão Tática
 with tab2:
     with st.container():
-        # Quantidade de Saidas da Pista por Aeródromo
-        st.header( 'Quantidade de Saidas da Pista por Aeródromo' )   
+        # Quantidade de Aeronaves por Ano de Fabricação
+        st.header( 'Quantidade de Aeronaves por Ano de Fabricação' )   
 
-        dfx = seleciona_saida_pista_aerodromo(df_aeronaves)
+        dfx = seleciona_ano_fab(df_aeronaves)
+        dfx = dfx[(dfx['aeronave_ano_fabricacao'] > 0) & (dfx['aeronave_ano_fabricacao'] < 3000)]
 
         #-------- Controle de dados dupla face
-        intervalo = st.slider('Selecione o intervalo de quantidade',
-                            0.0, 100.0, (6.0, 100.0))
+        min= dfx.loc[:, 'aeronave_ano_fabricacao'].min()/10
+        max= dfx.loc[:, 'aeronave_ano_fabricacao'].max()/10
+        min= min*10
+        max= max*10
+
+        intervalo = st.slider('Selecione o intervalo de ano',
+                            min, max, (1980.0, max))
         st.write('Intervalo Selecionado:',intervalo)    
 
-        df_aux = dfx[(dfx['qtde_saip_aerod'] >= intervalo[0]) & (dfx['qtde_saip_aerod'] < intervalo[1])]
+        df_aux = dfx[(dfx['aeronave_ano_fabricacao'] >= intervalo[0]) & (dfx['aeronave_ano_fabricacao'] < intervalo[1])]
 
-        fig = px.bar ( df_aux, x='qtde_saip_aerod', y='cidade_aerodromo',                      
+        fig = px.bar ( df_aux, x='aeronave_ano_fabricacao', y='qtde_ano_fab', title='Ano/Fabricação',                      
                        labels={
-                            "qtde_saip_aerod": "Quantidade",
-                            "cidade_aerodromo": "Aeródromo",
+                            "qtde_ano_fab": "Quantidade",
+                            "aeronave_ano_fabricacao": "Ano",
                               },                     
                      )
         fig.update_traces(width=0.8)
         fig.update_yaxes(tickfont=dict(size=8))
         fig.update_xaxes(tickfont=dict(size=8))
+
+        fig.update_traces(marker_color='green')
+        fig.update_layout(width=700, height=500, bargap=0.05)        
 
         st.plotly_chart( fig, use_container_width=True)          
