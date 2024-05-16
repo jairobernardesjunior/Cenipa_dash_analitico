@@ -73,7 +73,7 @@ df_fator_recomendacao = le_arquivo_analise()
 st.markdown("""
 <style>
     [data-testid=stSidebar] {
-        background-color: #8390EC;
+        background-color: #CBCBC8;
     }
 </style>
 """, unsafe_allow_html=True)

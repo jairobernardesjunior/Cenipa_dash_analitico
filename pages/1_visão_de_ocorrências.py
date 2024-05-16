@@ -1,3 +1,4 @@
+from haversine import haversine
 from datetime import datetime
 from PIL import Image
 from streamlit_folium import folium_static
@@ -18,6 +19,34 @@ def le_arquivo_analise():
     df_ocorrencias = pd.read_csv( 'dataset_analise/df_acidentes_analise_ocorr.csv' )
     df_ocorrencias['ocorrencia_dia'] = pd.to_datetime(df_ocorrencias['ocorrencia_dia'])
     return df_ocorrencias
+
+@st.cache_data
+def seleciona_latlong(dfx):
+    dfx = df_ocorrencias[['ocorrencia_cidade', 'ocorrencia_uf', 'ocorrencia_aerodromo', \
+                            'ocorrencia_latitude', 'ocorrencia_longitude', 'qtde_ocorr_aerod', \
+                            'qtde_aeron' \
+                        ]].drop_duplicates().sort_values('ocorrencia_cidade', ascending=True)
+    
+    lati_brasil = -4.276389
+    latf_brasil = -33.57389
+    longi_brasil = -74.38611
+    longf_brasil = -34.05639
+
+    dfx = dfx.loc[(dfx['ocorrencia_latitude'] != 0) & \
+                  (dfx['ocorrencia_longitude'] != 0) & \
+                  (dfx['ocorrencia_aerodromo'] != '***') & \
+                  (dfx['ocorrencia_aerodromo'] != '****') & \
+                  
+                  (dfx['ocorrencia_latitude'] < lati_brasil) & \
+                  (dfx['ocorrencia_latitude'] > latf_brasil) & \
+                  
+                  (dfx['ocorrencia_longitude'] > longi_brasil) & \
+                  (dfx['ocorrencia_longitude'] < longf_brasil) \
+
+                   , :]
+    
+    dfx.columns = ['cidade', 'UF', 'aeródromo', 'lat', 'long', 'ocorrências', 'aeronaves']
+    return dfx
 
 @st.cache_data
 def seleciona_tipo_ocorrencia(dfx):
@@ -116,7 +145,7 @@ df_ocorrencias = le_arquivo_analise()
 st.markdown("""
 <style>
     [data-testid=stSidebar] {
-        background-color: #8390EC;
+        background-color: #CBCBC8;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -199,6 +228,7 @@ with tab1:
 
     with st.container():
         # Percentual de Tipos de ocorrência - GPIZZA
+        st.markdown( """___""")
         st.header( 'Percentual de Tipos de Ocorrência' )   
 
         #-------- Controle de dados dupla face
@@ -252,18 +282,22 @@ with tab2:
 
 #-------- Visão Geográfica
 with tab3:
-    st.markdown( '# Country Maps')
     # Localização das ocorrências aeronáuticas - GMAP
-    df_aux = df1.loc[:, ['City', 'Road_traffic_density', 'Delivery_location_latitude', 'Delivery_location_longitude']].\
-                groupby(['City', 'Road_traffic_density']).median().reset_index()
-    df_aux = df_aux.loc[df_aux['City'] != 'NaN', :]
-    df_aux = df_aux.loc[df_aux['Road_traffic_density'] != 'NaN', :]   
+    st.header( 'Localização das Ocorrências Aeronáuticas' )   
 
-    map = folium.Map()
+    df_aux = seleciona_latlong(df_ocorrencias)
+
+
+    print(df_aux.shape)
+    print(df_aux.head(20))
+
+    map = folium.Map()  
 
     for index, location_info in df_aux.iterrows():
-        folium.Marker( [location_info['Delivery_location_latitude'],
-                        location_info['Delivery_location_longitude']],
-                        popup=location_info[['City', 'Road_traffic_density']] ).add_to( map )
+        folium.Marker( [location_info['lat'],
+                        location_info['long']],
+                        popup=location_info[[
+                        'cidade', 'UF', 'aeródromo', 'lat', 'long', 'ocorrências', \
+                        'aeronaves']] ).add_to( map )
         
     folium_static( map, width=1024, height=600 )

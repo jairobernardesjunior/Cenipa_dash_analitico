@@ -9,8 +9,8 @@ st.sidebar.image( image, width=240 )
 st.markdown("""
 <style>
     [data-testid=stSidebar] {
-        background-color: #CFD0DC;
-    }
+        background-color: #F2F1EB;
+    }           
 </style>
 """, unsafe_allow_html=True)
 
@@ -23,13 +23,15 @@ st.markdown(
     dados públicos do Cenipa da Força Aérea Brasileira.
     ### Como utilizar o Cenipa Dashboard?
     - Visão de ocorrências:
-        - Visão Gerencial: Métricas gerais de comportamento.
-        - Visão Tática: Indicadores semanais de crescimento.
-        - Visão Geográfica: Insights de geolocalização.
+        - Visão Estratégica: Indicadores de Médio e Longo Prazo.
+        - Visão Tática: Indicadores de Curto Prazo.
+        - Visão Geográfica: Geolocalização.
     - Visão de aeronaves:
-        - Acompanhamento dos indicadores semanis de crescimento
+        - Visão Estratégica: Indicadores de Médio e Longo Prazo.
+        - Visão Tática: Indicadores de Curto Prazo.
     - Visão de fatores contribuintes e recomendações de segurança:
-        - Indicadores semanis de crescimento dos restaurantes
+        - Visão Estratégica: Indicadores de Médio e Longo Prazo.
+        - Visão Tática: Indicadores de Curto Prazo.
     ### Contato
     - https://www.linkedin.com/in/jairobernardesjunior
     """)

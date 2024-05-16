@@ -72,7 +72,7 @@ df_aeronaves = le_arquivo_analise()
 st.markdown("""
 <style>
     [data-testid=stSidebar] {
-        background-color: #8390EC;
+        background-color: #CBCBC8;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -177,7 +177,7 @@ with tab2:
 
         df_aux = dfx[(dfx['aeronave_ano_fabricacao'] >= intervalo[0]) & (dfx['aeronave_ano_fabricacao'] < intervalo[1])]
 
-        fig = px.bar ( df_aux, x='aeronave_ano_fabricacao', y='qtde_ano_fab', title='Ano/Fabricação',                      
+        fig = px.bar ( df_aux, x='aeronave_ano_fabricacao', y='qtde_ano_fab', title='AnoFabric/Aeronaves',                      
                        labels={
                             "qtde_ano_fab": "Quantidade",
                             "aeronave_ano_fabricacao": "Ano",
