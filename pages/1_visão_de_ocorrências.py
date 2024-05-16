@@ -1,4 +1,3 @@
-from haversine import haversine
 from datetime import datetime
 from PIL import Image
 from streamlit_folium import folium_static
