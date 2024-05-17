@@ -1,3 +1,7 @@
+# Cria os insights sobre aeronaves em acidentes aeronáuticos
+
+# importa as bibliotecas
+from haversine import haversine
 from datetime import datetime
 from PIL import Image
 from streamlit_folium import folium_static
@@ -8,22 +12,26 @@ import streamlit as st
 import plotly.express as px
 import folium
 
+# define a exibição total de linhas e colunas na exibição
 #pd.set_option('display.max_rows', None)
 #pd.set_option('display.max_columns', None)
 #import warnings
 #warnings.simplefilter('ignore')
 
+# faz a leitura do arquivo e coloca na memória
 @st.cache_data
 def le_arquivo_analise():
     df_aeronaves = pd.read_csv( 'dataset_analise/df_acidentes_analise_aero.csv' )
     df_aeronaves['ocorrencia_dia'] = pd.to_datetime(df_aeronaves['ocorrencia_dia'])
     return df_aeronaves
 
+# monta o dataframe de fabricantes das aeronaves
 @st.cache_data
 def seleciona_fabricante(dfx):
     return dfx[['aeronave_fabricante', 'qtde_fabric', 'perc_fabric']].\
         drop_duplicates().sort_values('qtde_fabric', ascending=False)
 
+# monta o dataframe de ano de fabricação das aeronaves
 @st.cache_data
 def seleciona_ano_fab(dfx):
     return dfx[['aeronave_ano_fabricacao', 'qtde_ano_fab', 'perc_ano_fab']].\
@@ -52,11 +60,12 @@ st.sidebar.image( ix, width=240 )
 #-------- Empresa
 st.sidebar.markdown( '# Análise e Predição')
 st.sidebar.markdown( '### Powered by i4x.Data')
+st.sidebar.markdown( '##### **Site em constante evolução')
 
 #----------------------------------------------
 # Layout de dados
 #----------------------------------------------
-#-------- Dados Gerais
+#-------- Dados Gerais - monta dados gerais relativos a aeronaves
 st.title( 'Visão de Aeronaves' )
 
 with st.container():
@@ -99,28 +108,33 @@ with tab1:
         # Quantidade de Aeronaves por Fabricante
         st.header( 'Quantidade de Aeronaves por Fabricante' )   
 
+        # carrega o dataframe
         dfx = seleciona_fabricante(df_aeronaves)
 
-        #-------- Controle de dados dupla face
+        #-------- Controle de dados dupla face  - define intervalo online
         intervalo = st.slider('Selecione o intervalo de quantidade',
                             0.0, 100.0, (6.0, 100.0))
         st.write('Intervalo Selecionado:',intervalo)    
 
+        # aplica o intervalo escolhido no slider
         df_aux = dfx[(dfx['qtde_fabric'] >= intervalo[0]) & (dfx['qtde_fabric'] < intervalo[1])]
 
+        # passa os dados para o gráfico
         fig = px.bar ( df_aux, x='qtde_fabric', y='aeronave_fabricante', title='Aeronaves/Fabricante',                      
                        labels={
                             "qtde_fabric": "Quantidade",
                             "aeronave_fabricante": "Fabricante",
                               },                     
                      )
+        
+        # faz algumas configurações do gráfico
         fig.update_traces(width=0.8)
         fig.update_yaxes(tickfont=dict(size=8))
         fig.update_xaxes(tickfont=dict(size=8))
-
         fig.update_traces(marker_color='red')
         fig.update_layout(width=700, height=500, bargap=0.05)        
 
+        # exibe o gráfico
         st.plotly_chart( fig, use_container_width=True)                                   
 
 #-------- Visão Tática
@@ -129,10 +143,11 @@ with tab2:
         # Quantidade de Aeronaves por Ano de Fabricação
         st.header( 'Quantidade de Aeronaves por Ano de Fabricação' )   
 
+        # carrega o dataframe e exclui alguns anos incompatíveis
         dfx = seleciona_ano_fab(df_aeronaves)
         dfx = dfx[(dfx['aeronave_ano_fabricacao'] > 0) & (dfx['aeronave_ano_fabricacao'] < 3000)]
 
-        #-------- Controle de dados dupla face
+        #-------- Controle de dados dupla face - define intervalo online
         min= dfx.loc[:, 'aeronave_ano_fabricacao'].min()/10
         max= dfx.loc[:, 'aeronave_ano_fabricacao'].max()/10
         min= min*10
@@ -142,19 +157,23 @@ with tab2:
                             min, max, (1980.0, max))
         st.write('Intervalo Selecionado:',intervalo)    
 
+        # aplica o intervalo escolhido no slider
         df_aux = dfx[(dfx['aeronave_ano_fabricacao'] >= intervalo[0]) & (dfx['aeronave_ano_fabricacao'] < intervalo[1])]
 
+        # passa os dados para o gráfico
         fig = px.bar ( df_aux, x='aeronave_ano_fabricacao', y='qtde_ano_fab', title='AnoFabric/Aeronaves',                      
                        labels={
                             "qtde_ano_fab": "Quantidade",
                             "aeronave_ano_fabricacao": "Ano",
                               },                     
                      )
+        
+        # faz algumas configurações do gráfico
         fig.update_traces(width=0.8)
         fig.update_yaxes(tickfont=dict(size=8))
         fig.update_xaxes(tickfont=dict(size=8))
-
         fig.update_traces(marker_color='green')
         fig.update_layout(width=700, height=500, bargap=0.05)        
 
+        # exibe o gráfico
         st.plotly_chart( fig, use_container_width=True)          

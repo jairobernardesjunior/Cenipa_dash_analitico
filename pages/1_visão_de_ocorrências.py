@@ -1,3 +1,6 @@
+# Cria os insights sobre ocorrências de acidentes aeronáuticos
+
+# importa as bibliotecas
 from haversine import haversine
 from datetime import datetime
 from PIL import Image
@@ -9,17 +12,20 @@ import streamlit as st
 import plotly.express as px
 import folium
 
+# define a exibição total de linhas e colunas na exibição
 #pd.set_option('display.max_rows', None)
 #pd.set_option('display.max_columns', None)
 #import warnings
 #warnings.simplefilter('ignore')
 
+# faz a leitura do arquivo e coloca na memória
 @st.cache_data
 def le_arquivo_analise():
     df_ocorrencias = pd.read_csv( 'dataset_analise/df_acidentes_analise_ocorr.csv' )
     df_ocorrencias['ocorrencia_dia'] = pd.to_datetime(df_ocorrencias['ocorrencia_dia'])
     return df_ocorrencias
 
+# monta dataframe de latitude e longitude e faz alguns ajustes
 @st.cache_data
 def seleciona_latlong(dfx):
     dfx = df_ocorrencias[['ocorrencia_cidade', 'ocorrencia_uf', 'ocorrencia_aerodromo', \
@@ -53,11 +59,13 @@ def seleciona_latlong(dfx):
     dfx.columns = ['cidade', 'UF', 'aeródromo', 'lat', 'long', 'ocorrências', 'aeronaves']
     return dfx
 
+# monta o dataframe de tipo de ocorrências
 @st.cache_data
 def seleciona_tipo_ocorrencia(dfx):
     return dfx[['ocorrencia_tipo', 'qtde_tipo_ocorr', 'perc_tipo_ocorr']].\
         drop_duplicates().sort_values('perc_tipo_ocorr', ascending=False)
 
+# monta o dataframe de classificação do acidente por UF
 @st.cache_data
 def agrupa_uf_classificacao(dfx):
     # colunas
@@ -70,6 +78,7 @@ def agrupa_uf_classificacao(dfx):
     dfx = dfx.loc[:, cols].groupby( ['ocorrencia_uf', 'ocorrencia_classificacao']).count().reset_index()
     return dfx.sort_values(['ocorrencia_uf'], ascending=False)    
 
+# monta o dataframe de saidas da pista por cidade e aeródromo
 @st.cache_data
 def seleciona_saida_pista_aerodromo(dfx):
     dfx = dfx[['ocorrencia_cidade', 'ocorrencia_aerodromo', 'qtde_saip_aerod', 'qtde_saip_total']].\
@@ -83,6 +92,7 @@ def seleciona_saida_pista_aerodromo(dfx):
 
     return dfx
 
+#------------------- INÍCIO
 df_ocorrencias = le_arquivo_analise()
 
 #----------------------------------------------
@@ -105,11 +115,12 @@ st.sidebar.image( ix, width=240 )
 #-------- Empresa
 st.sidebar.markdown( '# Análise e Predição')
 st.sidebar.markdown( '### Powered by i4x.Data')
+st.sidebar.markdown( '##### **Site em constante evolução')
 
 #----------------------------------------------
 # Layout de dados
 #----------------------------------------------
-#-------- Dados Gerais
+#-------- Dados Gerais - monta dados gerais relativos a ocorrências
 st.title( 'Visão de Ocorrências' )
 
 with st.container():
@@ -165,12 +176,14 @@ with tab1:
                             "ocorrencia_classificacao": "Classificação"
                             },                     
                      )
+        
+        # faz algumas configurações do gráfico
         fig.update_traces(width=0.8)
         fig.update_yaxes(tickfont=dict(size=8))
         fig.update_xaxes(tickfont=dict(size=8))
-
         fig.update_layout(width=700, height=550, bargap=0.05)        
 
+        # exibe o gráfico
         st.plotly_chart( fig, use_container_width=True)
 
     with st.container():
@@ -178,20 +191,24 @@ with tab1:
         st.markdown( """___""")
         st.header( 'Percentual de Tipos de Ocorrência' )   
 
-        #-------- Controle de dados dupla face
+        #-------- Controle de dados dupla face - define intervalo online
         intervalo = st.slider('Selecione o intervalo de percentual',
                             0.0, 100.0, (1.75, 100.0))
         st.write('Intervalo Selecionado:',intervalo) 
 
+        # carrega o dataframe aplica o intervalo escolhido no slider e calcula a diferença do percentual
+        # eliminado
         dfx = seleciona_tipo_ocorrencia(df_ocorrencias)
         df_aux = dfx[(dfx['perc_tipo_ocorr'] >= intervalo[0]) & (dfx['perc_tipo_ocorr'] < intervalo[1])]
         perc_eliminados = \
             dfx[(dfx['perc_tipo_ocorr'] < intervalo[0]) | (dfx['perc_tipo_ocorr'] > intervalo[1])]['perc_tipo_ocorr'].sum()
 
+        # inclui uma linha do percentual eliminado
         df_inclui = {'ocorrencia_tipo':'***** fora do intervalo', 'qtde_tipo_ocorr': 0, 'perc_tipo_ocorr': perc_eliminados}
         df_inclui = pd.DataFrame(df_inclui, index=([1]))
         df_aux = pd.concat([df_aux, df_inclui])
 
+        # passa os dados para o gráfico de pizza e exibe
         fig = px.pie( df_aux, values='perc_tipo_ocorr', names='ocorrencia_tipo', title='Tipos de Ocorrências')
         fig.update_layout(autosize=False)
         st.plotly_chart( fig, use_container_width=True )                                    
@@ -202,15 +219,18 @@ with tab2:
         # Quantidade de Saidas da Pista por Aeródromo - GBARRAS
         st.header( 'Quantidade de Saidas da Pista por Aeródromo' )   
 
+        # carrega o dataframe
         dfx = seleciona_saida_pista_aerodromo(df_ocorrencias)
 
-        #-------- Controle de dados dupla face
+        #-------- Controle de dados dupla face - define intervalo online
         intervalo = st.slider('Selecione o intervalo de quantidade',
                             0.0, 100.0, (6.0, 100.0))
         st.write('Intervalo Selecionado:',intervalo)    
 
+        # aplica o intervalo escolhido no slider
         df_aux = dfx[(dfx['qtde_saip_aerod'] >= intervalo[0]) & (dfx['qtde_saip_aerod'] < intervalo[1])]
 
+        # passa os dados para o gráfico
         fig = px.bar ( df_aux, x='qtde_saip_aerod', y='cidade_aerodromo',    
                        title= 'Saidas da Pista',                  
                        labels={
@@ -218,13 +238,15 @@ with tab2:
                             "cidade_aerodromo": "Aeródromo",
                               },                     
                      )
+        
+        # faz algumas configurações do gráfico
         fig.update_traces(width=0.8)
         fig.update_yaxes(tickfont=dict(size=8))
         fig.update_xaxes(tickfont=dict(size=8))
-
         fig.update_traces(marker_color='blue')
         fig.update_layout(width=700, height=600, bargap=0.05)
 
+        # exibe o gráfico
         st.plotly_chart( fig, use_container_width=True)          
 
 #-------- Visão Geográfica
@@ -232,19 +254,19 @@ with tab3:
     # Localização das ocorrências aeronáuticas - GMAP
     st.header( 'Localização das Ocorrências Aeronáuticas' )   
 
+    # carrega o dataframe
     df_aux = seleciona_latlong(df_ocorrencias)
 
-
-    print(df_aux.shape)
-    print(df_aux.head(20))
-
+    # define uma variável map do folium.Map() 
     map = folium.Map()  
 
+    # passa os dados para o map
     for index, location_info in df_aux.iterrows():
         folium.Marker( [location_info['lat'],
                         location_info['long']],
                         popup=location_info[[
                         'cidade', 'UF', 'aeródromo', 'ocorrências', \
                         'aeronaves']] ).add_to( map )
-        
+    
+    # exibe o mapa com as coordenadas e alguns dados de ocorrências
     folium_static( map, width=1024, height=600 )
