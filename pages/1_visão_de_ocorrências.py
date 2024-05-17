@@ -37,6 +37,11 @@ def seleciona_latlong(dfx):
                   (dfx['ocorrencia_aerodromo'] != '***') & \
                   (dfx['ocorrencia_aerodromo'] != '****') & \
                   
+                  (dfx['ocorrencia_uf'] != 'AM') & \
+                  (dfx['ocorrencia_uf'] != 'RR') & \
+                  (dfx['ocorrencia_uf'] != 'PB') & \
+                  (dfx['ocorrencia_uf'] != 'PA') & \
+                  
                   (dfx['ocorrencia_latitude'] < lati_brasil) & \
                   (dfx['ocorrencia_latitude'] > latf_brasil) & \
                   
@@ -77,64 +82,6 @@ def seleciona_saida_pista_aerodromo(dfx):
     dfx['cidade_aerodromo'] = dfx['ocorrencia_cidade'] + ' - ' + dfx['ocorrencia_aerodromo']
 
     return dfx
-
-#8888888888888888888888888888888888888888888888888888888888888888888888888
-df1 = pd.read_csv( 'dataset/train.csv' )
-
-# 1. convertando a coluna Age de texto para numero
-linhas_selecionadas = (df1['Delivery_person_Age'] != 'NaN ') 
-df1 = df1.loc[linhas_selecionadas, :].copy()
-
-linhas_selecionadas = (df1['Delivery_person_Ratings'] != 'NaN ') 
-df1 = df1.loc[linhas_selecionadas, :].copy()
-
-linhas_selecionadas = (df1['Road_traffic_density'] != 'NaN ') 
-df1 = df1.loc[linhas_selecionadas, :].copy()
-
-linhas_selecionadas = (df1['City'] != 'NaN ') 
-df1 = df1.loc[linhas_selecionadas, :].copy()
-
-linhas_selecionadas = (df1['Festival'] != 'NaN ') 
-df1 = df1.loc[linhas_selecionadas, :].copy()
-
-df1.loc[df1.multiple_deliveries.isnull(), 'multiple_deliveries'] = ' '
-linhas_selecionadas = (df1['multiple_deliveries'] != ' ') 
-df1 = df1.loc[linhas_selecionadas, :].copy()
-
-df1['Delivery_person_Age'] = df1['Delivery_person_Age'].astype( int )
-
-# 2. convertando a coluna Ratings de texto para numero decimal ( float )
-df1['Delivery_person_Ratings'] = df1['Delivery_person_Ratings'].astype( float )
-
-# 3. convertando a coluna order_date de texto para data
-df1['Order_Date'] = pd.to_datetime( df1['Order_Date'], format='%d-%m-%Y' )
-
-# 4. convertendo multiple_deliveries de texto para numero inteiro ( int )
-linhas_selecionadas = (df1['multiple_deliveries'] != 'NaN ')
-df1 = df1.loc[linhas_selecionadas, :].copy()
-df1['multiple_deliveries'] = df1['multiple_deliveries'].astype( int )
-
-## 5. Removendo os espacos dentro de strings/texto/object
-#df1 = df1.reset_index( drop=True )
-#for i in range( len( df1 ) ):
-#  df1.loc[i, 'ID'] = df1.loc[i, 'ID'].strip()
-
-# 6. Removendo os espacos dentro de strings/texto/object
-
-df1.loc[:, 'ID'] = df1.loc[:, 'ID'].str.strip()
-df1.loc[:, 'Road_traffic_density'] = df1.loc[:, 'Road_traffic_density'].str.strip()
-df1.loc[:, 'Type_of_order'] = df1.loc[:, 'Type_of_order'].str.strip()
-df1.loc[:, 'Type_of_vehicle'] = df1.loc[:, 'Type_of_vehicle'].str.strip()
-df1.loc[:, 'City'] = df1.loc[:, 'City'].str.strip()
-df1.loc[:, 'Festival'] = df1.loc[:, 'Festival'].str.strip()
-
-# 7. Limpando a coluna de time taken
-df1['Time_taken(min)'] = df1['Time_taken(min)'].apply( lambda x: x.split( '(min) ')[1] )
-df1['Time_taken(min)']  = df1['Time_taken(min)'].astype( int )
-#8888888888888888888888888888888888888888888888888888888888888888888888888
-
-
-
 
 df_ocorrencias = le_arquivo_analise()
 
@@ -297,7 +244,7 @@ with tab3:
         folium.Marker( [location_info['lat'],
                         location_info['long']],
                         popup=location_info[[
-                        'cidade', 'UF', 'aeródromo', 'lat', 'long', 'ocorrências', \
+                        'cidade', 'UF', 'aeródromo', 'ocorrências', \
                         'aeronaves']] ).add_to( map )
         
     folium_static( map, width=1024, height=600 )

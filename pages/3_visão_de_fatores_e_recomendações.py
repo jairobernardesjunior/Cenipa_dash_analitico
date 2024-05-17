@@ -29,40 +29,6 @@ def seleciona_fator_area(dfx):
     return dfx[['fator_area', 'qtde_area', 'perc_area']].\
         drop_duplicates().sort_values('qtde_area', ascending=False)
 
-
-
-
-
-@st.cache_data
-def seleciona_tipo_ocorrencia(dfx):
-    return dfx[['ocorrencia_tipo', 'qtde_tipo_ocorr', 'perc_tipo_ocorr']].\
-        drop_duplicates().sort_values('perc_tipo_ocorr', ascending=False)
-
-@st.cache_data
-def agrupa_uf_classificacao(dfx):
-    # colunas
-    cols = ['ocorrencia_uf', 'ocorrencia_classificacao', 'qtde_classif']
-
-    # selecao de linhas
-    dfx = df_fator_recomendacao[['ocorrencia_uf', 'ocorrencia_classificacao']]
-    dfx['qtde_classif'] = 0
-
-    dfx = dfx.loc[:, cols].groupby( ['ocorrencia_uf', 'ocorrencia_classificacao']).count().reset_index()
-    return dfx.sort_values(['ocorrencia_uf'], ascending=False)    
-
-@st.cache_data
-def seleciona_saida_pista_aerodromo(dfx):
-    dfx = dfx[['ocorrencia_cidade', 'ocorrencia_aerodromo', 'qtde_saip_aerod', 'qtde_saip_total']].\
-        sort_values('qtde_saip_aerod', ascending=False)
-    dfx = dfx.drop_duplicates().dropna()
-    dfx = dfx[(dfx['qtde_saip_aerod'] > 0) & 
-              (dfx['ocorrencia_aerodromo'] != '***') &
-              (dfx['ocorrencia_aerodromo'] != '****') &
-              (dfx['ocorrencia_aerodromo'] != '**NI')]
-    dfx['cidade_aerodromo'] = dfx['ocorrencia_cidade'] + ' - ' + dfx['ocorrencia_aerodromo']
-
-    return dfx
-
 #------------------- INÍCIO
 df_fator_recomendacao = le_arquivo_analise()
 
