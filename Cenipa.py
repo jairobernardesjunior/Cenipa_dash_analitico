@@ -10,7 +10,7 @@
 # importa as bibliotecas
 import streamlit as st
 from PIL import Image
-st.set_page_config( page_title='Home', page_icon='')
+st.set_page_config( page_title='Cenipa_i4x.Data', page_icon='')
 
 # carrega imagem para o sidebar (barra lateral)
 image_path = 'images/aviao5.jpg'
