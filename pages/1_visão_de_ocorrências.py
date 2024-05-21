@@ -118,40 +118,6 @@ st.sidebar.markdown( '### Powered by i4x.Data')
 st.sidebar.markdown( '##### **Site em constante evolução')
 
 #----------------------------------------------
-# Layout de dados
-#----------------------------------------------
-#-------- Dados Gerais - monta dados gerais relativos a ocorrências
-st.title( 'Visão de Ocorrências' )
-
-with st.container():
-    st.header( 'Métricas Gerais' )
-
-    col1, col2 = st.columns( 2, gap='Large')
-
-    with col1:
-        #  data inicial
-        col1.metric( 'Data Inicial', df_ocorrencias.loc[:, 'ocorrencia_dia'].min().strftime("%d/%m/%Y") )            
-
-    with col2:
-        # data final
-        col2.metric( 'Data Final', df_ocorrencias.loc[:, 'ocorrencia_dia'].max().strftime("%d/%m/%Y") ) 
-
-with st.container():
-
-    col1, col2, col3 = st.columns( 3, gap='Large')
-    with col1:
-        # total de ocorrências
-        col1.metric( 'Total de Ocorrências', df_ocorrencias.loc[:, 'ocorrencia_classificacao'].count() )            
-
-    with col2:
-        # total de aeródromos envolvidos
-        col2.metric( 'Qtde de Aeródromos', len(pd.unique(df_ocorrencias['ocorrencia_aerodromo'])) )   
-
-    with col3:
-        # total de saída de pista
-        col3.metric( 'Qtde de Saídas da Pista', df_ocorrencias.loc[:, 'qtde_saip_total'].max() ) 
-
-#----------------------------------------------
 # gráficos
 #----------------------------------------------
 #-------- Abas de finalidade dos dados

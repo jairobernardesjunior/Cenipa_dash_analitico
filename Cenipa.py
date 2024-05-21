@@ -21,7 +21,7 @@ st.sidebar.image( image, width=240 )
 st.markdown("""
 <style>
     [data-testid=stSidebar] {
-        background-color: #F2F1EB;
+        background-color: #FCFCFC;
     }           
 </style>
 """, unsafe_allow_html=True)

@@ -63,40 +63,6 @@ st.sidebar.markdown( '### Powered by i4x.Data')
 st.sidebar.markdown( '##### **Site em constante evolução')
 
 #----------------------------------------------
-# Layout de dados
-#----------------------------------------------
-#-------- Dados Gerais - monta dados gerais relativos a aeronaves
-st.title( 'Visão de Aeronaves' )
-
-with st.container():
-    st.header( 'Métricas Gerais' )
-
-    col1, col2 = st.columns( 2, gap='Large')
-
-    with col1:
-        #  data inicial
-        col1.metric( 'Data Inicial', df_aeronaves.loc[:, 'ocorrencia_dia'].min().strftime("%d/%m/%Y") )            
-
-    with col2:
-        # data final
-        col2.metric( 'Data Final', df_aeronaves.loc[:, 'ocorrencia_dia'].max().strftime("%d/%m/%Y") ) 
-
-with st.container():
-
-    col1, col2, col3 = st.columns( 3, gap='Large')
-    with col1:
-        # total de aeronaves envolvidas
-        col1.metric( 'Total de Aeronaves', len(pd.unique(df_aeronaves['aeronave_matricula'])) )               
-
-    with col2:
-        # total de modelos envolvidos
-        col2.metric( 'Qtde de Modelos', len(pd.unique(df_aeronaves['aeronave_modelo'])) )   
-
-    with col3:
-        # total de tipos de veículo
-        col3.metric( 'Qtde de Tipos de Veículos', len(pd.unique(df_aeronaves['aeronave_tipo_veiculo'])) )   
-
-#----------------------------------------------
 # gráficos
 #----------------------------------------------
 #-------- Abas de finalidade dos dados

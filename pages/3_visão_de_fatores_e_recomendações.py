@@ -63,25 +63,6 @@ st.sidebar.markdown( '### Powered by i4x.Data')
 st.sidebar.markdown( '##### **Site em constante evolução')
 
 #----------------------------------------------
-# Layout de dados
-#----------------------------------------------
-#-------- Dados Gerais
-st.title( 'Visão de Fatores e Recomendações' )
-
-with st.container():
-    st.header( 'Métricas Gerais' )
-
-    col1, col2 = st.columns( 2, gap='Large')
-
-    with col1:
-        #  data inicial
-        col1.metric( 'Data Inicial', df_fator_recomendacao.loc[:, 'ocorrencia_dia'].min().strftime("%d/%m/%Y") )            
-
-    with col2:
-        # data final
-        col2.metric( 'Data Final', df_fator_recomendacao.loc[:, 'ocorrencia_dia'].max().strftime("%d/%m/%Y") ) 
-
-#----------------------------------------------
 # gráficos
 #----------------------------------------------
 #-------- Abas de finalidade dos dados
