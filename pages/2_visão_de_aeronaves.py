@@ -71,7 +71,7 @@ tab1, tab2, tab3 = st.tabs( ['Visão Estratégica', 'Visão Tática', '-'])
 #-------- Visão Estratégica
 with tab1:
     with st.container():
-        # Quantidade de Aeronaves por Fabricante
+        # Quantidade de Aeronaves por Fabricante - GBARRAS
         st.header( 'Quantidade de Aeronaves por Fabricante' )   
 
         # carrega o dataframe
@@ -86,7 +86,7 @@ with tab1:
         df_aux = dfx[(dfx['qtde_fabric'] >= intervalo[0]) & (dfx['qtde_fabric'] < intervalo[1])]
 
         # passa os dados para o gráfico
-        fig = px.bar ( df_aux, x='qtde_fabric', y='aeronave_fabricante', title='Aeronaves/Fabricante',                      
+        fig = px.bar ( df_aux, x='qtde_fabric', y='aeronave_fabricante', title='Aeronaves por Fabricante',                      
                        labels={
                             "qtde_fabric": "Quantidade",
                             "aeronave_fabricante": "Fabricante",
@@ -101,12 +101,11 @@ with tab1:
         fig.update_layout(width=700, height=500, bargap=0.05)        
 
         # exibe o gráfico
-        st.plotly_chart( fig, use_container_width=True)                                   
+        st.plotly_chart( fig, use_container_width=True)     
 
-#-------- Visão Tática
-with tab2:
     with st.container():
-        # Quantidade de Aeronaves por Ano de Fabricação
+        # Quantidade de Aeronaves por Ano de Fabricação - GBARRAS
+        st.markdown( """___""")         
         st.header( 'Quantidade de Aeronaves por Ano de Fabricação' )   
 
         # carrega o dataframe e exclui alguns anos incompatíveis
@@ -127,7 +126,7 @@ with tab2:
         df_aux = dfx[(dfx['aeronave_ano_fabricacao'] >= intervalo[0]) & (dfx['aeronave_ano_fabricacao'] < intervalo[1])]
 
         # passa os dados para o gráfico
-        fig = px.bar ( df_aux, x='aeronave_ano_fabricacao', y='qtde_ano_fab', title='AnoFabric/Aeronaves',                      
+        fig = px.bar ( df_aux, x='aeronave_ano_fabricacao', y='qtde_ano_fab', title='Aeronaves por Ano de Fabricação',                      
                        labels={
                             "qtde_ano_fab": "Quantidade",
                             "aeronave_ano_fabricacao": "Ano",
@@ -142,4 +141,6 @@ with tab2:
         fig.update_layout(width=700, height=500, bargap=0.05)        
 
         # exibe o gráfico
-        st.plotly_chart( fig, use_container_width=True)          
+        st.plotly_chart( fig, use_container_width=True)                                      
+
+#-------- Visão Tática

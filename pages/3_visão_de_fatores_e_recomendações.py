@@ -75,7 +75,22 @@ with tab1:
         st.header( 'Percentual de Fatores Contribuintes' )   
 
         # carrega o dataframe
-        df_aux = seleciona_fator_nome(df_fator_recomendacao)
+        dfx = seleciona_fator_nome(df_fator_recomendacao)
+
+        #-------- Controle de dados dupla face  - define intervalo online
+        intervalo = st.slider('Selecione o intervalo de percentual',
+                            0.0, 100.0, (1.0, 100.0))
+        st.write('Intervalo Selecionado:',intervalo)    
+
+        # aplica o intervalo escolhido no slider
+        df_aux = dfx[(dfx['perc_fator_nome'] >= intervalo[0]) & (dfx['perc_fator_nome'] < intervalo[1])]  
+        perc_eliminados = \
+            dfx[(dfx['perc_fator_nome'] < intervalo[0]) | (dfx['perc_fator_nome'] > intervalo[1])]['perc_fator_nome'].sum()
+
+        # inclui uma linha do percentual eliminado
+        df_inclui = {'fator_nome':'***** fora do intervalo', 'qtde_fator_nome': 0, 'perc_fator_nome': perc_eliminados}
+        df_inclui = pd.DataFrame(df_inclui, index=([1]))
+        df_aux = pd.concat([df_aux, df_inclui])              
 
         # passa os dados para o gráfico e exibe
         fig = px.pie( df_aux, values='perc_fator_nome', names='fator_nome', title='Fator Contribuinte')

@@ -92,6 +92,14 @@ def seleciona_saida_pista_aerodromo(dfx):
 
     return dfx
 
+# monta o dataframe de ocorrências por aeródromo
+@st.cache_data
+def seleciona_aerodromo_ocorr(dfx):
+    dfx = dfx[['ocorrencia_aerodromo', 'qtde_ocorr_aerod']].\
+        sort_values('qtde_ocorr_aerod', ascending=False)
+
+    return dfx.drop_duplicates().dropna()
+
 #------------------- INÍCIO
 df_ocorrencias = le_arquivo_analise()
 
@@ -177,7 +185,7 @@ with tab1:
         # passa os dados para o gráfico de pizza e exibe
         fig = px.pie( df_aux, values='perc_tipo_ocorr', names='ocorrencia_tipo', title='Tipos de Ocorrências')
         fig.update_layout(autosize=False)
-        st.plotly_chart( fig, use_container_width=True )                                    
+        st.plotly_chart( fig, use_container_width=True )                                           
 
 #-------- Visão Tática
 with tab2:
@@ -213,7 +221,41 @@ with tab2:
         fig.update_layout(width=700, height=600, bargap=0.05)
 
         # exibe o gráfico
-        st.plotly_chart( fig, use_container_width=True)          
+        st.plotly_chart( fig, use_container_width=True)     
+
+    with st.container():
+        # Quantidade de Ocorrências por Aeródromo - GBARRAS
+        st.markdown( """___""")        
+        st.header( 'Quantidade de Ocorrências por Aeródromo' )   
+
+        # carrega o dataframe
+        dfx = seleciona_aerodromo_ocorr(df_ocorrencias)
+
+        #-------- Controle de dados dupla face  - define intervalo online
+        intervalo = st.slider('Selecione o intervalo de quantidade',
+                            0.0, 100.0, (12.0, 100.0))
+        st.write('Intervalo Selecionado:',intervalo)    
+
+        # aplica o intervalo escolhido no slider
+        df_aux = dfx[(dfx['qtde_ocorr_aerod'] >= intervalo[0]) & (dfx['qtde_ocorr_aerod'] < intervalo[1])]
+
+        # passa os dados para o gráfico
+        fig = px.bar ( df_aux, x='qtde_ocorr_aerod', y='ocorrencia_aerodromo', title='Ocorrências por Aeródromo',                      
+                       labels={
+                            "qtde_ocorr_aerod": "Quantidade",
+                            "ocorrencia_aerodromo": "Aeródromo",
+                              },                     
+                     )
+        
+        # faz algumas configurações do gráfico
+        fig.update_traces(width=0.8)
+        fig.update_yaxes(tickfont=dict(size=8))
+        fig.update_xaxes(tickfont=dict(size=8))
+        fig.update_traces(marker_color='orange')
+        fig.update_layout(width=700, height=500, bargap=0.05)        
+
+        # exibe o gráfico
+        st.plotly_chart( fig, use_container_width=True)                
 
 #-------- Visão Geográfica
 with tab3:
