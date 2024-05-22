@@ -48,7 +48,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 #-------- Carrega imagem
-image_path = './images/aviao2.jpg'
+image_path = './images/aviao1.jpg'
 ix = Image.open( image_path ) 
 st.sidebar.image( ix, width=240 )
 
