@@ -59,7 +59,7 @@ st.sidebar.image( ix, width=240 )
 
 #-------- Empresa
 st.sidebar.markdown( '# Análise e Predição')
-st.sidebar.markdown( '### Powered by i4x.Data')
+st.sidebar.markdown( '### Powered by Jairo Bernardes Júnior')
 st.sidebar.markdown( '##### **Site em constante evolução')
 
 #----------------------------------------------
