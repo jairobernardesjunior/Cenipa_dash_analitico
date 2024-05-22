@@ -37,6 +37,27 @@ def seleciona_ano_fab(dfx):
     return dfx[['aeronave_ano_fabricacao', 'qtde_ano_fab', 'perc_ano_fab']].\
         drop_duplicates().sort_values('aeronave_ano_fabricacao', ascending=True)
 
+# monta o dataframe de tipo de veículo por ano
+@st.cache_data
+def seleciona_tipo_veiculo_ano(dfx):
+    dfx.ocorrencia_dia = pd.to_datetime(dfx.ocorrencia_dia)
+    dfx['ano'] = dfx.ocorrencia_dia.dt.year
+    dfx = dfx[['aeronave_tipo_veiculo', 'ano']]
+    dfx['qtde_tipo'] = 0
+    dfx = dfx.loc[:, :].groupby( ['ano', 'aeronave_tipo_veiculo']).count().reset_index()
+    dfx = dfx.sort_values('ano', ascending=False)
+    return dfx
+
+# monta o dataframe de matrículas de aeronaves em ocorrências
+@st.cache_data
+def seleciona_matricula_ocorr(dfx):
+    dfx = dfx[['aeronave_matricula']]
+    dfx['qtde_matricula'] = 0
+
+    dfx = dfx.loc[:, :].groupby( ['aeronave_matricula']).count().reset_index()
+    dfx = dfx.sort_values('qtde_matricula', ascending=False)
+    return dfx
+
 #------------------- INÍCIO
 df_aeronaves = le_arquivo_analise()
 
@@ -144,3 +165,76 @@ with tab1:
         st.plotly_chart( fig, use_container_width=True)                                      
 
 #-------- Visão Tática
+with tab2:
+    with st.container():
+        # Quantidade de Aeronaves por Tipo de VSeículo e Ano - GBARRAS
+        st.header( 'Quantidade de Tipo de Veículo Envolvidos por Ano' )   
+
+        # carrega o dataframe
+        dfx = seleciona_tipo_veiculo_ano(df_aeronaves)
+
+        #-------- Controle de dados dupla face - define intervalo online
+        min= dfx.loc[:, 'ano'].min()/10
+        max= dfx.loc[:, 'ano'].max()/10
+        min= min*10
+        max= max*10
+
+        intervalo = st.slider('Selecione o intervalo de ano',
+                            min, max, (min, max))
+        st.write('Intervalo Selecionado:',intervalo)    
+
+        # aplica o intervalo escolhido no slider
+        df_aux = dfx[(dfx['ano'] >= intervalo[0]) & (dfx['ano'] < intervalo[1])]
+
+        # passa os dados para o gráfico
+        fig = px.bar ( df_aux, x='ano', y='qtde_tipo', title='Tipo de Veículo Envolvidos por Ano',  
+                       color='aeronave_tipo_veiculo', barmode='group',                    
+                       labels={
+                            "qtde_tipo": "Quantidade",
+                            "ano": "Ano",
+                            "aeronave_tipo_veiculo": "Tipo de Veículo",
+                              },                     
+                     )
+        
+        # faz algumas configurações do gráfico
+        fig.update_traces(width=0.8)
+        fig.update_yaxes(tickfont=dict(size=8))
+        fig.update_xaxes(tickfont=dict(size=8))
+        fig.update_layout(width=700, height=500, bargap=0.05)        
+
+        # exibe o gráfico
+        st.plotly_chart( fig, use_container_width=True) 
+
+    with st.container():
+        # Quantidade de Matrículas de Aeronaves em Ocorrências - GBARRA
+        st.markdown( """___""")
+        st.header( 'Quantidade de Matrículas de Aeronaves em Ocorrências' )   
+
+        #-------- Controle de dados dupla face - define intervalo online
+        intervalo = st.slider('Selecione o intervalo de quantidade',
+                            0.0, 100.0, (10.0, 28.0))
+        st.write('Intervalo Selecionado:',intervalo) 
+
+        # carrega o dataframe aplica o intervalo escolhido no slider
+        dfx = seleciona_matricula_ocorr(df_aeronaves)
+        df_aux = dfx[(dfx['qtde_matricula'] >= intervalo[0]) & (dfx['qtde_matricula'] < intervalo[1])]
+        perc_eliminados = \
+            dfx[(dfx['qtde_matricula'] < intervalo[0]) | (dfx['qtde_matricula'] > intervalo[1])]['qtde_matricula'].sum()
+
+        # passa os dados para o gráfico
+        fig = px.bar ( df_aux, x='aeronave_matricula', y='qtde_matricula', title='Matrículas de Aeronaves em Ocorrências',                      
+                       labels={
+                            "qtde_matricula": "Quantidade",
+                            "aeronave_matricula": "Matrícula",
+                              },                     
+                     )
+        
+        # faz algumas configurações do gráfico
+        fig.update_traces(width=0.8)
+        fig.update_yaxes(tickfont=dict(size=8))
+        fig.update_xaxes(tickfont=dict(size=8))
+        fig.update_traces(marker_color='blue')
+        fig.update_layout(width=700, height=500, bargap=0.05)        
+
+        # exibe o gráfico
+        st.plotly_chart( fig, use_container_width=True)         
